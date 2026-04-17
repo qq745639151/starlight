@@ -6,6 +6,7 @@ r"""
 在 Windows 系统上配置 Maven 环境变量，设置 MAVEN_HOME 并将 bin 目录添加到系统 PATH。
 检查当前环境，如果配置已经符合要求则跳过，避免重复设置。
 **单版本配置**，自动移除其他 Maven 版本路径，只保留当前配置版本。
+同时配置阿里云镜像加速下载，设置本地仓库路径到 maven/repository。
 
 默认 Maven 安装路径: D:\Softwares\maven
 
@@ -25,16 +26,17 @@ from typing import Optional
 # 默认 Maven 安装路径
 DEFAULT_MAVEN_PATH = r"D:\Softwares\maven"
 
+# 阿里云 Maven 镜像配置
+ALIBABA_MIRROR_CONFIG = '''
+  <mirror>
+    <id>aliyunmaven</id>
+    <mirrorOf>*</mirrorOf>
+    <name>阿里云公共仓库</name>
+    <url>https://maven.aliyun.com/repository/public</url>
+  </mirror>
+'''
 
-def get_current_maven_home() -> Optional[str]:
-    """获取当前系统的 MAVEN_HOME 环境变量"""
-    return os.environ.get('MAVEN_HOME')
 
-
-def check_maven_exists(maven_path: str) -> bool:
-    """检查 Maven 路径是否存在且包含 bin/mvn.cmd"""
-    mvn_cmd = os.path.join(maven_path, 'bin', 'mvn.cmd')
-    return os.path.exists(mvn_cmd)
 
 
 def get_system_path() -> str:
@@ -139,6 +141,17 @@ def add_to_system_path(maven_bin_path: str) -> bool:
     return result.returncode == 0
 
 
+def get_current_maven_home() -> Optional[str]:
+    """获取当前系统的 MAVEN_HOME 环境变量"""
+    return os.environ.get('MAVEN_HOME')
+
+
+def check_maven_exists(maven_path: str) -> bool:
+    """检查 Maven 路径是否存在且包含 bin/mvn.cmd"""
+    mvn_cmd = os.path.join(maven_path, 'bin', 'mvn.cmd')
+    return os.path.exists(mvn_cmd)
+
+
 def check_admin() -> bool:
     """检查是否有管理员权限"""
     try:
@@ -150,6 +163,69 @@ def check_admin() -> bool:
         )
         return True
     except subprocess.CalledProcessError:
+        return False
+
+
+def configure_maven_settings(maven_path: str) -> bool:
+    """配置 Maven settings.xml：阿里云镜像 + 本地仓库路径
+
+    本地仓库: {maven_path}/repository
+    镜像: 阿里云公共仓库，加速下载
+    """
+    # settings.xml 路径
+    settings_path = os.path.join(maven_path, 'conf', 'settings.xml')
+
+    # 如果已经配置了，跳过
+    if os.path.exists(settings_path):
+        # 检查是否已经有阿里云镜像配置
+        with open(settings_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        if 'maven.aliyun.com' in content and f"{maven_path}\\repository" in content:
+            print("[OK] settings.xml 已经配置好阿里云镜像和本地仓库，跳过")
+            return True
+
+    # 读取现有内容，如果没有就创建模板
+    if os.path.exists(settings_path):
+        with open(settings_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    else:
+        # 默认模板
+        content = '''<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <!-- 本地仓库 -->
+  <localRepository>{local_repo}</localRepository>
+
+  <!-- 镜像配置 -->
+  <mirrors>
+{mirrors}
+  </mirrors>
+
+</settings>
+'''
+
+    # 替换占位符
+    local_repo_path = os.path.join(maven_path, 'repository')
+    # 创建 repository 目录
+    os.makedirs(local_repo_path, exist_ok=True)
+
+    content = content.format(
+        local_repo=local_repo_path.replace('\\', '\\\\'),
+        mirrors=ALIBABA_MIRROR_CONFIG
+    )
+
+    # 写入
+    try:
+        with open(settings_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        print(f"[OK] settings.xml 配置完成:")
+        print(f"  本地仓库: {local_repo_path}")
+        print(f"  镜像: 阿里云公共仓库 https://maven.aliyun.com/repository/public")
+        return True
+    except PermissionError:
+        print("错误: 没有权限写入 settings.xml")
         return False
 
 
