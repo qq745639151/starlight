@@ -179,72 +179,89 @@ def configure_maven_settings(maven_path: str) -> bool:
     # 创建 repository 目录
     os.makedirs(local_repo_path, exist_ok=True)
 
-    # 读取现有内容
+    # 检查是否已经配置了阿里云镜像和本地仓库
     if os.path.exists(settings_path):
         with open(settings_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        # 检查是否已经配置了阿里云镜像和本地仓库
         if 'maven.aliyun.com' in content and local_repo_path in content:
             print("[OK] settings.xml 已经配置好阿里云镜像和本地仓库，跳过")
             return True
-    else:
-        # 默认空模板
-        content = '''<?xml version="1.0" encoding="UTF-8"?>
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
-</settings>
-'''
 
-    # 设置本地仓库
-    # 先检查 localRepository 是否已经是非注释状态，并且包含我们想要的路径
-    if f'<localRepository>{local_repo_path}</localRepository>' in content:
-        # 已经正确配置，无需修改
-        pass
-    else:
-        # 在 <!-- interactiveMode 注释之前插入 localRepository
-        # 这样保证格式正确且保留原有注释
-        insert_position = content.find('<!-- interactiveMode')
-        if insert_position != -1:
-            new_content = content[:insert_position]
-            new_content += f'  <localRepository>{local_repo_path}</localRepository>\n\n'
-            new_content += content[insert_position:]
-            content = new_content
-        else:
-            # 回退到在 </settings> 前插入
-            content = content.rstrip()
-            if content.endswith('</settings>'):
-                content = content[:-11] + f'  <localRepository>{local_repo_path}</localRepository>\n</settings>'
+    # 尝试方法一：基于现有文件进行编辑（保留所有原始注释）
+    template_path = os.path.join(os.path.dirname(__file__), 'settings.xml')
+    success = False
 
-    # 添加阿里云镜像
+    if os.path.exists(settings_path):
+        try:
+            with open(settings_path, 'r', encoding='utf-8') as f:
+                content = f.read()
 
-    # 添加阿里云镜像
-    if 'aliyunmaven' not in content:
-        # 找到 </mirrors> 标签前插入
-        if '</mirrors>' in content:
-            # 在 </mirrors> 前插入
-            mirror_content = ALIBABA_MIRROR_CONFIG.rstrip()
-            content = content.replace('</mirrors>', f'  {mirror_content}\n</mirrors>')
-        else:
-            # 如果没有 mirrors 节点，创建一个
-            mirrors_block = f'''  <mirrors>
+            # 设置本地仓库
+            # 先检查 localRepository 是否已经是非注释状态，并且包含我们想要的路径
+            if f'<localRepository>{local_repo_path}</localRepository>' not in content:
+                # 在 <!-- interactiveMode 注释之前插入 localRepository
+                # 这样保证格式正确且保留原有注释
+                insert_position = content.find('<!-- interactiveMode')
+                if insert_position != -1:
+                    new_content = content[:insert_position]
+                    new_content += f'  <localRepository>{local_repo_path}</localRepository>\n\n'
+                    new_content += content[insert_position:]
+                    content = new_content
+                else:
+                    # 回退到在 </settings> 前插入
+                    content = content.rstrip()
+                    if content.endswith('</settings>'):
+                        content = content[:-11] + f'  <localRepository>{local_repo_path}</localRepository>\n</settings>'
+
+            # 添加阿里云镜像
+            if 'aliyunmaven' not in content:
+                # 找到 </mirrors> 标签前插入
+                if '</mirrors>' in content:
+                    # 在 </mirrors> 前插入
+                    mirror_content = ALIBABA_MIRROR_CONFIG.rstrip()
+                    content = content.replace('</mirrors>', f'  {mirror_content}\n</mirrors>')
+                else:
+                    # 如果没有 mirrors 节点，创建一个
+                    mirrors_block = f'''  <mirrors>
 {ALIBABA_MIRROR_CONFIG}  </mirrors>
 '''
-            # 在 </settings> 前插入
-            content = content.rstrip()
-            if content.endswith('</settings>'):
-                content = content[:-11] + mirrors_block + '</settings>'
+                    # 在 </settings> 前插入
+                    content = content.rstrip()
+                    if content.endswith('</settings>'):
+                        content = content[:-11] + mirrors_block + '</settings>'
 
-    # 写入
-    try:
-        with open(settings_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+            # 写入
+            with open(settings_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            success = True
+        except Exception:
+            # 编辑失败，使用 fallback 方法
+            print("[!] 编辑现有 settings.xml 失败，使用模板 fallback 方式")
+            success = False
+
+    # 如果编辑失败或者文件不存在，使用 fallback：直接拷贝预配置模板
+    if not success:
+        try:
+            # 读取仓库中的模板
+            with open(template_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            # 替换占位符
+            content = content.replace('{LOCAL_REPO_PATH}', local_repo_path)
+            # 写入
+            with open(settings_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            success = True
+        except Exception as e:
+            print(f"错误: fallback 模板拷贝失败: {e}")
+            return False
+
+    if success:
         print(f"[OK] settings.xml 配置完成:")
         print(f"  本地仓库: {local_repo_path}")
         print(f"  镜像: 阿里云公共仓库 https://maven.aliyun.com/repository/public")
         return True
-    except PermissionError:
-        print("错误: 没有权限写入 settings.xml")
+    else:
+        print("错误: settings.xml 配置失败")
         return False
 
 
