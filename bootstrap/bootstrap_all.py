@@ -393,9 +393,51 @@ def main():
     download_dir = os.path.join(os.path.dirname(__file__), 'downloads')
     os.makedirs(download_dir, exist_ok=True)
 
-    # 1. Java JDK
+    # 1. 配置 pip 清华镜像源（最先配置，后续安装都受益）
     print("\n" + "=" * 70)
-    print("1. 检查 Java JDK")
+    print("1. 配置 pip 清华镜像源")
+    print("-" * 70)
+
+    if configure_pip_tsinghua():
+        results.append(('pip 清华镜像', True, '配置完成'))
+    else:
+        results.append(('pip 清华镜像', False, '配置失败'))
+        all_ok = False
+
+    # 2. 检查 uv Python 包管理器（需要 pip，pip 已配置好镜像加速）
+    print("\n" + "=" * 70)
+    print("2. 检查 uv Python 包管理器")
+    print("-" * 70)
+
+    try:
+        result = subprocess.run(['uv', '--version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"[OK] uv 已安装: {result.stdout.strip()}")
+            results.append(('uv', True, '已安装'))
+        else:
+            print("正在通过 pip 安装 uv...")
+            result = subprocess.run([sys.executable, '-m', 'pip', 'install', 'uv'], capture_output=True, text=True)
+            if result.returncode == 0:
+                print("[OK] uv 安装完成")
+                results.append(('uv', True, '安装完成'))
+            else:
+                print("[!] uv 安装失败")
+                results.append(('uv', False, 'pip 安装失败'))
+                all_ok = False
+    except FileNotFoundError:
+        print("正在通过 pip 安装 uv...")
+        result = subprocess.run([sys.executable, '-m', 'pip', 'install', 'uv'], capture_output=True, text=True)
+        if result.returncode == 0:
+            print("[OK] uv 安装完成")
+            results.append(('uv', True, '安装完成'))
+        else:
+            print("[!] uv 安装失败")
+            results.append(('uv', False, 'pip 安装失败'))
+            all_ok = False
+
+    # 3. Java JDK
+    print("\n" + "=" * 70)
+    print("3. 检查 Java JDK")
     print("-" * 70)
 
     java_config = TOOL_CONFIGS['java']
@@ -428,9 +470,9 @@ def main():
     else:
         results.append(('Java JDK', True, '已安装'))
 
-    # 2. Maven
+    # 4. Apache Maven
     print("\n" + "=" * 70)
-    print("2. 检查 Apache Maven")
+    print("4. 检查 Apache Maven")
     print("-" * 70)
 
     maven_config = TOOL_CONFIGS['maven']
@@ -459,9 +501,9 @@ def main():
         if 'MAVEN_HOME' in os.environ:
             configure_maven_aliyun(os.environ['MAVEN_HOME'])
 
-    # 3. Go
+    # 5. Go 语言
     print("\n" + "=" * 70)
-    print("3. 检查 Go 语言")
+    print("5. 检查 Go 语言")
     print("-" * 70)
 
     go_config = TOOL_CONFIGS['go']
@@ -513,9 +555,9 @@ def main():
     # 验证 Go 是否可用
     verify_tool('go', 'go version', 'Go 语言')
 
-    # 4. MinGW-w64
+    # 6. MinGW-w64 C/C++
     print("\n" + "=" * 70)
-    print("4. 检查 MinGW-w64 C/C++")
+    print("6. 检查 MinGW-w64 C/C++")
     print("-" * 70)
 
     mingw_config = TOOL_CONFIGS['mingw']
@@ -541,9 +583,9 @@ def main():
     else:
         results.append(('MinGW-w64', True, '已安装'))
 
-    # 5. Node.js
+    # 7. Node.js
     print("\n" + "=" * 70)
-    print("5. 检查 Node.js")
+    print("7. 检查 Node.js")
     print("-" * 70)
 
     node_config = TOOL_CONFIGS['node']
@@ -572,48 +614,6 @@ def main():
             all_ok = False
     else:
         results.append(('Node.js', True, '已安装'))
-
-    # 6. uv
-    print("\n" + "=" * 70)
-    print("6. 检查 uv Python 包管理器")
-    print("-" * 70)
-
-    try:
-        result = subprocess.run(['uv', '--version'], capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"[OK] uv 已安装: {result.stdout.strip()}")
-            results.append(('uv', True, '已安装'))
-        else:
-            print("正在通过 pip 安装 uv...")
-            result = subprocess.run([sys.executable, '-m', 'pip', 'install', 'uv'], capture_output=True, text=True)
-            if result.returncode == 0:
-                print("[OK] uv 安装完成")
-                results.append(('uv', True, '安装完成'))
-            else:
-                print("[!] uv 安装失败")
-                results.append(('uv', False, 'pip 安装失败'))
-                all_ok = False
-    except FileNotFoundError:
-        print("正在通过 pip 安装 uv...")
-        result = subprocess.run([sys.executable, '-m', 'pip', 'install', 'uv'], capture_output=True, text=True)
-        if result.returncode == 0:
-            print("[OK] uv 安装完成")
-            results.append(('uv', True, '安装完成'))
-        else:
-            print("[!] uv 安装失败")
-            results.append(('uv', False, 'pip 安装失败'))
-            all_ok = False
-
-    # 7. 配置 pip
-    print("\n" + "=" * 70)
-    print("7. 配置 pip 清华镜像源")
-    print("-" * 70)
-
-    if configure_pip_tsinghua():
-        results.append(('pip 清华镜像', True, '配置完成'))
-    else:
-        results.append(('pip 清华镜像', False, '配置失败'))
-        all_ok = False
 
     # 总结
     print("\n" + "=" * 70)
