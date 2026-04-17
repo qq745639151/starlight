@@ -72,10 +72,26 @@ def main():
 
     print()
     print("[OK] uv 安装成功!")
-    print("请重启终端或命令提示符以使 PATH 更改生效")
+
+    # 尝试验证 uv 安装
+    print("\n尝试验证 uv 安装...")
+    try:
+        result = subprocess.run(
+            ['uv', '--version'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            print(f"[OK] uv 验证成功: {result.stdout.strip()}")
+        else:
+            print("[!] uv 版本命令失败，需要重启终端后生效")
+            print("    当前会话环境变量还没更新，这是正常的")
+    except FileNotFoundError:
+        print("[!] uv 命令未找到，需要重启终端后生效")
+        print("    当前会话环境变量还没更新，这是正常的")
+
     print()
-    print("验证安装:")
-    print("  uv --version")
+    print("请重启终端或命令提示符以使 PATH 更改生效")
     print()
     print("常用命令:")
     print("  uv init          # 初始化新项目")
