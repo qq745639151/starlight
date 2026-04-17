@@ -172,54 +172,104 @@ def configure_maven_settings(maven_path: str) -> bool:
     本地仓库: {maven_path}/repository
     镜像: 阿里云公共仓库，加速下载
     """
+    import xml.etree.ElementTree as ET
+
     # settings.xml 路径
     settings_path = os.path.join(maven_path, 'conf', 'settings.xml')
-
-    # 如果已经配置了，跳过
-    if os.path.exists(settings_path):
-        # 检查是否已经有阿里云镜像配置
-        with open(settings_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        if 'maven.aliyun.com' in content and f"{maven_path}\\repository" in content:
-            print("[OK] settings.xml 已经配置好阿里云镜像和本地仓库，跳过")
-            return True
-
-    # 读取现有内容，如果没有就创建模板
-    if os.path.exists(settings_path):
-        with open(settings_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-    else:
-        # 默认模板
-        content = '''<?xml version="1.0" encoding="UTF-8"?>
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
-
-  <!-- 本地仓库 -->
-  <localRepository>{local_repo}</localRepository>
-
-  <!-- 镜像配置 -->
-  <mirrors>
-{mirrors}
-  </mirrors>
-
-</settings>
-'''
-
-    # 替换占位符
     local_repo_path = os.path.join(maven_path, 'repository')
+
     # 创建 repository 目录
     os.makedirs(local_repo_path, exist_ok=True)
 
-    content = content.format(
-        local_repo=local_repo_path.replace('\\', '\\\\'),
-        mirrors=ALIBABA_MIRROR_CONFIG
-    )
+    # 如果文件不存在，创建根元素
+    if not os.path.exists(settings_path):
+        # 创建新的 settings.xml
+        settings = ET.Element('settings')
+        settings.set('xmlns', 'http://maven.apache.org/SETTINGS/1.0.0')
+        settings.set('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
+        settings.set('xsi:schemaLocation', 'http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd')
+        tree = ET.ElementTree(settings)
+        root = settings
+        # 默认命名空间为空
+        ET.register_namespace('', 'http://maven.apache.org/SETTINGS/1.0.0')
+    else:
+        # 检查是否已经配置了阿里云镜像
+        with open(settings_path, 'r', encoding='utf-8') as f:
+            content_check = f.read()
+        if 'maven.aliyun.com' in content_check and local_repo_path in content_check:
+            print("[OK] settings.xml 已经配置好阿里云镜像和本地仓库，跳过")
+            return True
+        # 解析现有 XML
+        tree = ET.parse(settings_path)
+        root = tree.getroot()
+        # 获取命名空间 URI
+        namespace = root.tag.split('}')[0].strip('{') if '}' in root.tag else ''
+        if namespace:
+            ns = {'maven': namespace}
+            ET.register_namespace('', namespace)
 
-    # 写入
+    # 根据是否有命名空间查找元素
+    def find_element(parent, tag):
+        # 先尝试不带命名空间
+        elem = parent.find(tag)
+        if elem is not None:
+            return elem
+        # 尝试带命名空间
+        if 'namespace' in locals() and namespace:
+            elem = parent.find(f'./{tag}', ns)
+        return elem
+
+    def find_elements(parent, tag):
+        # 先尝试不带命名空间
+        elems = parent.findall(tag)
+        if elems:
+            return elems
+        # 尝试带命名空间
+        if 'namespace' in locals() and namespace:
+            elems = parent.findall(f'./{tag}', ns)
+        return elems
+
+    # 设置本地仓库
+    localRepository = find_element(root, 'localRepository')
+    if localRepository is None:
+        localRepository = ET.SubElement(root, 'localRepository')
+    localRepository.text = local_repo_path
+
+    # 找到或创建 mirrors 节点
+    mirrors = find_element(root, 'mirrors')
+    if mirrors is None:
+        mirrors = ET.SubElement(root, 'mirrors')
+
+    # 检查是否已有 aliyunmaven mirror，没有就添加
+    has_aliyun = False
+    for mirror in find_elements(mirrors, 'mirror'):
+        id_elem = find_element(mirror, 'id')
+        if id_elem is not None and id_elem.text == 'aliyunmaven':
+            has_aliyun = True
+            break
+
+    if not has_aliyun:
+        # 添加阿里云镜像
+        mirror = ET.SubElement(mirrors, 'mirror')
+        id_elem = ET.SubElement(mirror, 'id')
+        id_elem.text = 'aliyunmaven'
+        mirrorOf = ET.SubElement(mirror, 'mirrorOf')
+        mirrorOf.text = '*'
+        name = ET.SubElement(mirror, 'name')
+        name.text = '阿里云公共仓库'
+        url = ET.SubElement(mirror, 'url')
+        url.text = 'https://maven.aliyun.com/repository/public'
+
+    # 写入格式化的 XML
     try:
-        with open(settings_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        # 使用 indent 格式化（Python 3.9+）
+        try:
+            ET.indent(tree, space='  ', level=0)
+        except AttributeError:
+            # 如果旧版本 Python 没有 indent，跳过格式化
+            pass
+
+        tree.write(settings_path, encoding='utf-8', xml_declaration=True)
         print(f"[OK] settings.xml 配置完成:")
         print(f"  本地仓库: {local_repo_path}")
         print(f"  镜像: 阿里云公共仓库 https://maven.aliyun.com/repository/public")
@@ -322,6 +372,14 @@ def main():
             print("错误: 添加到 PATH 失败")
             sys.exit(1)
         print("[OK] PATH 添加完成")
+
+    print()
+
+    # 配置 settings.xml (阿里云镜像 + 本地仓库)
+    print("配置 settings.xml...")
+    settings_success = configure_maven_settings(maven_path)
+    if not settings_success:
+        print("警告: settings.xml 配置失败")
 
     print()
     print("[OK] 配置完成!")
