@@ -1,0 +1,140 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1776389492436,
+  "projectRoot": "F:\\GitHub\\starlight",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": {
+      "defaultBranch": "master",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {},
+  "hotPaths": [
+    {
+      "path": "java\\config_java_env.py",
+      "accessCount": 19,
+      "lastAccessed": 1776395088375,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 16,
+      "lastAccessed": 1776395224795,
+      "type": "file"
+    },
+    {
+      "path": "npm\\npm_config.py",
+      "accessCount": 6,
+      "lastAccessed": 1776394502164,
+      "type": "file"
+    },
+    {
+      "path": "python_package_clear.py",
+      "accessCount": 5,
+      "lastAccessed": 1776389831193,
+      "type": "file"
+    },
+    {
+      "path": "claude\\switch_anthropic_key.py",
+      "accessCount": 4,
+      "lastAccessed": 1776393036621,
+      "type": "file"
+    },
+    {
+      "path": "python\\python_package_clear.py",
+      "accessCount": 4,
+      "lastAccessed": 1776395747052,
+      "type": "file"
+    },
+    {
+      "path": "fix_tortoise_overlay.reg",
+      "accessCount": 3,
+      "lastAccessed": 1776389714641,
+      "type": "file"
+    },
+    {
+      "path": "pip_use_tsinghua_source.py",
+      "accessCount": 3,
+      "lastAccessed": 1776390279485,
+      "type": "file"
+    },
+    {
+      "path": "windows\\npm_config.py",
+      "accessCount": 3,
+      "lastAccessed": 1776390712417,
+      "type": "file"
+    },
+    {
+      "path": "python\\pip_use_tsinghua_source.py",
+      "accessCount": 3,
+      "lastAccessed": 1776391056472,
+      "type": "file"
+    },
+    {
+      "path": "tortoise\\fix_tortoise_overlay.reg",
+      "accessCount": 3,
+      "lastAccessed": 1776391153393,
+      "type": "file"
+    },
+    {
+      "path": "uv\\install_uv.py",
+      "accessCount": 2,
+      "lastAccessed": 1776395614582,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1776389517458,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\qq745\\AppData\\Roaming\\pip\\pip.ini",
+      "accessCount": 1,
+      "lastAccessed": 1776390235410,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\qq745\\.claude\\settings.json",
+      "accessCount": 1,
+      "lastAccessed": 1776392660401,
+      "type": "file"
+    },
+    {
+      "path": "java\\restore_system_path.py",
+      "accessCount": 1,
+      "lastAccessed": 1776394093495,
+      "type": "file"
+    },
+    {
+      "path": "java\\deduplicate_path.py",
+      "accessCount": 1,
+      "lastAccessed": 1776394216269,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

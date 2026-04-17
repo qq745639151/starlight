@@ -1,0 +1,39 @@
+; =============================================================================
+; 文件名称: fix_tortoise_overlay.reg
+; 作用: 解决 Windows 资源管理器中 TortoiseGit 图标覆盖不显示的问题
+; 适用场景: 安装了 TortoiseGit 但资源管理器中图标覆盖不显示或显示异常
+; 原因分析:
+;   1. Windows 图标覆盖有缓存上限 (Max Cached Icons)，默认较小
+;   2. 第三方软件图标覆盖过多时，Tortoise 的图标被挤出缓存
+;   3. ShellIconOverlayIdentifiers 中项名称前的空格越多，优先级越高（优先显示）
+; 解决方法:
+;   1. 增大 Max Cached Icons 上限（从默认值增大到 2000）
+;   2. 删除原有的带少量空格的 Tortoise 图标项（原 2 个空格）
+;   3. 重新创建带更多空格的 Tortoise 图标项（8 个空格），提高优先级
+; 使用方法: 双击运行或执行 reg import fix_tortoise_overlay.reg，然后重启资源管理器
+; =============================================================================
+
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer]
+"Max Cached Icons"="2000"
+
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise1Normal]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise2Modified]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise3Conflict]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise4Locked]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise5ReadOnly]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise6Deleted]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise7Added]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise8Ignored]
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\  Tortoise9Unversioned]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise1Normal]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise2Modified]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise3Conflict]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise4Locked]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise5ReadOnly]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise6Deleted]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise7Added]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise8Ignored]
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers\        Tortoise9Unversioned]
