@@ -56,6 +56,11 @@ Trilium Notes 数据目录配置
 - `config_trilium_data_dir.py` — 修改 Trilium 启动脚本，将默认数据存储目录从 `./trilium-data` 修改为用户 Documents 目录下的 `Trilium-data`
 - `set_trilium_data_dir_env.py` — 设置系统环境变量 `TRILIUM_DATA_DIR`，指定 Trilium Notes 数据存储目录，无需修改启动脚本
 
+### windows/
+Windows 系统文件夹位置修改
+
+- `move_user_folders.py` — 修改 Windows 用户默认文件夹（Documents/Downloads/Pictures/Music/Videos/Desktop/Favorites）位置到其他分区，通过修改注册表完成，需要重启生效
+
 ## Scripts
 
 ```bash
