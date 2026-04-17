@@ -197,24 +197,26 @@ def configure_maven_settings(maven_path: str) -> bool:
 '''
 
     # 设置本地仓库
-    # 检查是否已有 <localRepository> 标签
-    if '<localRepository>' in content:
-        # 替换现有的 localRepository - 使用 lambda 避免反斜杠转义问题
-        import re
-        def replace_match(match):
-            return f'<localRepository>{local_repo_path}</localRepository>'
-        content = re.sub(
-            r'<localRepository>.*?</localRepository>',
-            replace_match,
-            content,
-            flags=re.DOTALL
-        )
+    # 先检查 localRepository 是否已经是非注释状态，并且包含我们想要的路径
+    if f'<localRepository>{local_repo_path}</localRepository>' in content:
+        # 已经正确配置，无需修改
+        pass
     else:
-        # 在 </settings> 前插入
-        content = content.rstrip()
-        if content.endswith('</settings>'):
-            # 使用 str.replace 避免转义问题
-            content = content[:-11] + f'  <localRepository>{local_repo_path}</localRepository>\n</settings>'
+        # 在 <!-- interactiveMode 注释之前插入 localRepository
+        # 这样保证格式正确且保留原有注释
+        insert_position = content.find('<!-- interactiveMode')
+        if insert_position != -1:
+            new_content = content[:insert_position]
+            new_content += f'  <localRepository>{local_repo_path}</localRepository>\n\n'
+            new_content += content[insert_position:]
+            content = new_content
+        else:
+            # 回退到在 </settings> 前插入
+            content = content.rstrip()
+            if content.endswith('</settings>'):
+                content = content[:-11] + f'  <localRepository>{local_repo_path}</localRepository>\n</settings>'
+
+    # 添加阿里云镜像
 
     # 添加阿里云镜像
     if 'aliyunmaven' not in content:
