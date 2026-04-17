@@ -5,7 +5,7 @@ r"""
 作用:
 在 Windows 系统上配置 Go 语言环境变量，设置 GOROOT 并将 bin 目录添加到系统 PATH。
 检查当前环境，如果配置已经符合要求则跳过，避免重复设置。
-支持多版本 Go 并存，只添加当前版本，不删除其他版本。
+**单版本配置**，自动移除其他 Go 版本路径，只保留当前配置版本。
 
 默认 Go 安装路径: D:\Softwares\Go
 
@@ -91,20 +91,47 @@ def set_goroot(go_path: str) -> bool:
     return result.returncode == 0
 
 
+def find_go_in_path(current_path: str) -> list[str]:
+    """在 PATH 中查找已有的 Go bin 路径（任何包含 go.exe 的目录）"""
+    entries = current_path.split(';')
+    go_entries = []
+    for entry in entries:
+        entry = entry.strip()
+        if not entry:
+            continue
+        # 识别 Go 路径，包含 go 且 bin 目录存在 go.exe
+        entry_lower = entry.lower()
+        if 'go' in entry_lower and os.path.exists(os.path.join(entry, 'go.exe')):
+            go_entries.append(entry)
+    return go_entries
+
+
 def add_to_system_path(go_bin_path: str) -> bool:
     """将 Go bin 目录添加到系统 PATH（需要管理员权限）
-    支持多版本 Go 并存，只检查当前路径是否已存在，不存在才追加，保留其他版本
+    **单版本配置**，自动移除其他 Go 版本路径，只保留当前版本
     """
     # 获取当前 PATH
     current_path = get_system_path()
+
+    # 查找并移除其他已存在的 Go 版本
+    existing_go_entries = find_go_in_path(current_path)
+    if existing_go_entries:
+        print(f"  发现 {len(existing_go_entries)} 个其他 Go 版本:")
+        for entry in existing_go_entries:
+            if entry.lower() != go_bin_path.lower():
+                print(f"    将移除: {entry}")
+                current_path = current_path.replace(entry + ';', '').replace(';' + entry, '').replace(entry, '')
 
     # 检查是否已经存在当前 Go
     if is_go_in_path(go_bin_path):
         print(f"[OK] {go_bin_path} 已经在 PATH 中，跳过")
         return True
 
-    # 不存在就追加，保留其他所有路径（支持多版本并存）
-    new_path = f"{current_path};{go_bin_path}"
+    # 添加当前版本到 PATH
+    current_entries = [e.strip() for e in current_path.split(';') if e.strip()]
+    current_entries.append(go_bin_path)
+    new_path = ';'.join(current_entries)
+
     result = subprocess.run(
         ['setx', '/M', 'Path', new_path],
         capture_output=True,

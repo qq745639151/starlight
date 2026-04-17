@@ -43,12 +43,12 @@ uv Python 包管理器安装
 ### go/
 Go 语言环境配置
 
-- `config_go_env.py` — 配置 Go 系统环境变量，设置 GOROOT 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，支持多版本 Go 并存
+- `config_go_env.py` — 配置 Go 系统环境变量，设置 GOROOT 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，**单版本配置，自动移除其他 Go 版本**
 
 ### maven/
 Maven 环境配置
 
-- `config_maven.py` — 配置 Maven 系统环境变量，设置 MAVEN_HOME 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，支持多版本 Maven 并存
+- `config_maven.py` — 配置 Maven 系统环境变量，设置 MAVEN_HOME 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，**单版本配置，自动移除其他 Maven 版本**
 
 ## Scripts
 

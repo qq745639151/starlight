@@ -5,7 +5,7 @@ r"""
 作用:
 在 Windows 系统上配置 Maven 环境变量，设置 MAVEN_HOME 并将 bin 目录添加到系统 PATH。
 检查当前环境，如果配置已经符合要求则跳过，避免重复设置。
-支持多版本 Maven 并存，只添加当前版本，不删除其他版本。
+**单版本配置**，自动移除其他 Maven 版本路径，只保留当前配置版本。
 
 默认 Maven 安装路径: D:\Softwares\maven
 
@@ -90,20 +90,47 @@ def set_maven_home(maven_path: str) -> bool:
     return result.returncode == 0
 
 
+def find_maven_in_path(current_path: str) -> list[str]:
+    """在 PATH 中查找已有的 Maven bin 路径（任何包含 mvn.cmd 的目录）"""
+    entries = current_path.split(';')
+    maven_entries = []
+    for entry in entries:
+        entry = entry.strip()
+        if not entry:
+            continue
+        # 识别 Maven 路径，包含 maven 且 bin 目录存在 mvn.cmd
+        entry_lower = entry.lower()
+        if ('maven' in entry_lower or 'mvn' in entry_lower) and os.path.exists(os.path.join(entry, 'mvn.cmd')):
+            maven_entries.append(entry)
+    return maven_entries
+
+
 def add_to_system_path(maven_bin_path: str) -> bool:
     """将 Maven bin 目录添加到系统 PATH（需要管理员权限）
-    支持多版本 Maven 并存，只检查当前路径是否已存在，不存在才追加，保留其他版本
+    **单版本配置**，自动移除其他 Maven 版本路径，只保留当前版本
     """
     # 获取当前 PATH
     current_path = get_system_path()
+
+    # 查找并移除其他已存在的 Maven 版本
+    existing_maven_entries = find_maven_in_path(current_path)
+    if existing_maven_entries:
+        print(f"  发现 {len(existing_maven_entries)} 个其他 Maven 版本:")
+        for entry in existing_maven_entries:
+            if entry.lower() != maven_bin_path.lower():
+                print(f"    将移除: {entry}")
+                current_path = current_path.replace(entry + ';', '').replace(';' + entry, '').replace(entry, '')
 
     # 检查是否已经存在当前 Maven
     if is_maven_in_path(maven_bin_path):
         print(f"[OK] {maven_bin_path} 已经在 PATH 中，跳过")
         return True
 
-    # 不存在就追加，保留其他所有路径（支持多版本并存）
-    new_path = f"{current_path};{maven_bin_path}"
+    # 添加当前版本到 PATH
+    current_entries = [e.strip() for e in current_path.split(';') if e.strip()]
+    current_entries.append(maven_bin_path)
+    new_path = ';'.join(current_entries)
+
     result = subprocess.run(
         ['setx', '/M', 'Path', new_path],
         capture_output=True,
