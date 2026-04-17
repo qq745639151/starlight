@@ -1,0 +1,13 @@
+[project]
+name = "starlight"
+version = "0.1.0"
+description = "Personal utility scripts for automating development environment setup on Windows"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "black>=24.8.0",
+    "ruff>=0.15.11",
+]
