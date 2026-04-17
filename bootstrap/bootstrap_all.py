@@ -487,6 +487,32 @@ def main():
     else:
         results.append(('Go 语言', True, '已安装'))
 
+    # 配置 Go 路径和国内代理
+    print("\n[步骤] 配置 Go 路径和国内代理")
+    go_config_script = os.path.join(
+        os.path.dirname(__file__),
+        '..', 'go', 'config_go_paths.py'
+    )
+    if os.path.exists(go_config_script):
+        result = subprocess.run(
+            [sys.executable, go_config_script, go_default_path],
+            capture_output=False,
+            text=False
+        )
+        if result.returncode == 0:
+            print("[OK] Go 路径和代理配置完成")
+            results.append(('Go 路径配置', True, '配置完成'))
+        else:
+            print("[WARN] Go 路径配置可能有问题，请检查")
+            results.append(('Go 路径配置', False, '配置失败'))
+            # 不标记整体失败，因为安装已经完成
+    else:
+        print("[WARN] config_go_paths.py not found, skipping")
+        results.append(('Go 路径配置', False, '脚本不存在'))
+
+    # 验证 Go 是否可用
+    verify_tool('go', 'go version', 'Go 语言')
+
     # 4. MinGW-w64
     print("\n" + "=" * 70)
     print("4. 检查 MinGW-w64 C/C++")
