@@ -61,6 +61,11 @@ Windows 系统文件夹位置修改
 
 - `move_user_folders.py` — 修改 Windows 用户默认文件夹（Documents/Downloads/Pictures/Music/Videos/Desktop/Favorites）位置到其他分区，通过修改注册表完成，需要重启生效
 
+### bootstrap/
+一键自动配置所有开发环境
+
+- `bootstrap_all.py` — 一键自动检查、下载、安装、配置所有常用开发工具（Java JDK/Maven/Go/MinGW-w64/Node.js/uv），自动配置镜像源，默认全部安装到 `D:\Softwares`
+
 ## Scripts
 
 ```bash
