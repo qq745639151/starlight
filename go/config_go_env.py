@@ -206,6 +206,25 @@ def main():
 
     print()
     print("[OK] 配置完成!")
+
+    # 尝试验证 go 版本
+    print("\n尝试验证 Go 安装...")
+    try:
+        result = subprocess.run(
+            ['go', 'version'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            print(f"[OK] Go 验证成功: {result.stdout.strip()}")
+        else:
+            print("[!] Go 版本命令失败，需要重启终端后生效")
+            print("    当前会话环境变量还没更新，这是正常的")
+    except FileNotFoundError:
+        print("[!] go 命令未找到，需要重启终端后生效")
+        print("    当前会话环境变量还没更新，这是正常的")
+
+    print()
     print("请注意:")
     print("  1. 需要重启命令提示符或终端才能看到环境变量变化")
     print("  2. 需要重启已打开的应用程序（如 Claude Code）才能使用新的环境变量")

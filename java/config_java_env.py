@@ -273,6 +273,27 @@ def main():
 
     print()
     print("[OK] 配置完成!")
+
+    # 尝试验证 java 版本
+    print("\n尝试验证 Java 安装...")
+    try:
+        result = subprocess.run(
+            ['java', '-version'],
+            capture_output=True,
+            text=True
+        )
+        # java -version 输出到 stderr
+        version_output = result.stderr.strip() if result.stderr else result.stdout.strip()
+        if result.returncode == 0 and version_output:
+            print(f"[OK] Java 验证成功: {version_output.splitlines()[0]}")
+        else:
+            print("[!] Java 版本命令失败，需要重启终端后生效")
+            print("    当前会话环境变量还没更新，这是正常的")
+    except FileNotFoundError:
+        print("[!] java 命令未找到，需要重启终端后生效")
+        print("    当前会话环境变量还没更新，这是正常的")
+
+    print()
     print("请注意:")
     print("  1. 需要重启命令提示符或终端才能看到环境变量变化")
     print("  2. 需要重启已打开的应用程序（如 Claude Code）才能使用新的环境变量")
