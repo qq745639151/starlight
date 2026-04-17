@@ -50,6 +50,12 @@ Maven 环境配置
 
 - `config_maven.py` — 配置 Maven 系统环境变量，设置 MAVEN_HOME 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，**单版本配置，自动移除其他 Maven 版本**
 
+### trilium/
+Trilium Notes 数据目录配置
+
+- `config_trilium_data_dir.py` — 修改 Trilium 启动脚本，将默认数据存储目录从 `./trilium-data` 修改为用户 Documents 目录下的 `Trilium-data`
+- `set_trilium_data_dir_env.py` — 设置系统环境变量 `TRILIUM_DATA_DIR`，指定 Trilium Notes 数据存储目录，无需修改启动脚本
+
 ## Scripts
 
 ```bash

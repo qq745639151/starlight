@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 r"""
-配置 Trilium Notes 数据存储目录
+配置 Trilium Notes 数据存储目录 - 修改启动脚本方式
 
 作用:
-修改 Trilium 启动脚本，将默认数据存储目录从 `./trilium-data` 修改为用户 Documents 目录下的 `Trilium-data`。
+修改 Trilium 的 `trilium-portable.bat` 启动脚本，在启动脚本中设置 `TRILIUM_DATA_DIR`
+环境变量，将默认数据存储目录从 `./trilium-data` 修改为 Documents 目录下的 `Trilium-data`。
 这样数据会保存在文档目录，即使重装系统 Trilium 数据也不会丢失。
 
+这是**修改启动脚本方式**，另一种方式是直接设置系统环境变量 `TRILIUM_DATA_DIR`，
+请参见 `set_trilium_data_dir_env.py`。
+
 默认 Trilium 安装路径: D:\Softwares\Trilium
-默认目标数据目录: %USERPROFILE%\Documents\Trilium-data
+默认目标数据目录: 系统默认 Documents\Trilium-data (自动检测，支持 Documents 移动到其他分区)
 
 用法:
 python trilium/config_trilium_data_dir.py [trilium_path]
 
 参数:
   trilium_path  可选，指定 Trilium 安装路径，默认使用 D:\Softwares\Trilium
+
+另见:
+  set_trilium_data_dir_env.py - 设置系统环境变量 TRILIUM_DATA_DIR 方式，无需修改启动脚本
 """
 
 import os
@@ -27,7 +34,25 @@ DEFAULT_TRILIUM_PATH = r"D:\Softwares\Trilium"
 
 
 def get_documents_trilium_path() -> str:
-    """获取 Documents 目录下的 Trilium-data 路径"""
+    """获取系统默认 Documents 目录下的 Trilium-data 路径
+    使用 Windows Shell API 获取正确的 Documents 位置，即使它被移动到其他分区
+    """
+    try:
+        # 使用 powershell 获取系统真实的 Documents 目录位置
+        # 这能正确处理用户将 Documents 移动到其他分区的情况
+        result = subprocess.run(
+            ['powershell', '-Command', '[Environment]::GetFolderPath(\"MyDocuments\")'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            docs_path = result.stdout.strip()
+            if docs_path:
+                return os.path.join(docs_path, 'Trilium-data')
+    except Exception:
+        pass
+
+    # 回退方案：从 USERPROFILE 拼接
     user_profile = os.environ.get('USERPROFILE', r'C:\Users\%USERNAME%')
     return os.path.join(user_profile, 'Documents', 'Trilium-data')
 
