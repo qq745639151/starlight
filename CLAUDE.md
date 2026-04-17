@@ -19,10 +19,11 @@ npm 配置脚本
 
 - `npm_config.py` — 配置 npm 全局路径、缓存目录、淘宝镜像源，并将 node_global/bin 添加到用户 PATH
 
-### tortoise/
+### tortoisegit/
 TortoiseGit 配置
 
-- `fix_tortoise_overlay.reg` — 解决 TortoiseGit 图标覆盖不显示的问题
+- `fix_overlay_icons.py` — 自动修复 TortoiseGit 图标覆盖不显示问题，自动导入注册表并重启 Windows 资源管理器
+- `fix_tortoise_overlay.reg` — 注册表修复文件
 
 ### claude/
 Claude Code API 配置切换
@@ -78,8 +79,8 @@ python python/pip_use_tsinghua_source.py
 # 配置 npm（创建全局目录 + 淘宝镜像源 + PATH）
 python npm/npm_config.py
 
-# 修复 TortoiseGit 图标覆盖
-reg import tortoise/fix_tortoise_overlay.reg
+# 修复 TortoiseGit 图标覆盖（需要管理员权限）
+python tortoisegit/fix_overlay_icons.py
 ```
 
 ## Development Notes
