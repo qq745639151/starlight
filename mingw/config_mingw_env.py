@@ -71,8 +71,9 @@ def is_mingw_in_path(mingw_bin_path: str) -> bool:
 
 def set_mingw_home(mingw_path: str) -> bool:
     """设置系统环境变量 MINGW_HOME（需要管理员权限）"""
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'MINGW_HOME', mingw_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'MINGW_HOME', '/t', 'REG_SZ', '/d', mingw_path, '/f'],
         capture_output=True,
         text=True
     )
@@ -124,8 +125,9 @@ def add_to_system_path(mingw_bin_path: str, mingw_libexec_path: str) -> bool:
     new_entries.extend(current_entries)
     new_path = ';'.join(new_entries)
 
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'Path', new_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'Path', '/t', 'REG_SZ', '/d', new_path, '/f'],
         capture_output=True,
         text=True
     )
@@ -133,7 +135,37 @@ def add_to_system_path(mingw_bin_path: str, mingw_libexec_path: str) -> bool:
 
 
 def get_current_mingw_home() -> Optional[str]:
-    """获取当前系统的 MINGW_HOME 环境变量"""
+    """获取当前系统的 MINGW_HOME 环境变量（从注册表读取，保证获取的是系统配置而非当前进程环境）"""
+    result = subprocess.run(
+        ['reg', 'query', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'MINGW_HOME'],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        # 如果从注册表读取失败，回退到从环境变量获取
+        return os.environ.get('MINGW_HOME')
+
+    # 注册表输出格式:
+    #     MINGW_HOME    REG_SZ    C:\Program Files\mingw64
+    # 我们需要找到 REG_SZ 之后的所有内容
+    lines = result.stdout.splitlines()
+    for line in lines:
+        line = line.rstrip('\n')
+        # 找出带有 MINGW_HOME 的行，这行以多个空格开头
+        if 'MINGW_HOME' in line and 'REG_' in line:
+            # 找到 REG_ 的位置，后面就是完整的 MINGW_HOME 值
+            reg_index = line.find('REG_')
+            # 跳过 REG_xxx 和它前面的空格
+            # 找到第三个部分之后都是值（名称 类型 值）
+            # 格式是: [空格]名称[空格+]类型[空格+]值
+            # 所以从找到 REG_ 后跳过类型
+            space_after_reg = line.find(' ', reg_index)
+            if space_after_reg != -1:
+                # 值从 space_after_reg + 1 开始
+                mingw_home_value = line[space_after_reg + 1:].rstrip().lstrip()
+                return mingw_home_value
+
+    # 如果解析失败，回退到从环境变量获取
     return os.environ.get('MINGW_HOME')
 
 

@@ -267,8 +267,9 @@ def add_to_system_path(new_path: str) -> bool:
     new_full_path = current_path.rstrip(';') + ';' + new_path
     print(f"添加 {new_path} 到 PATH")
 
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'Path', new_full_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'Path', '/t', 'REG_SZ', '/d', new_full_path, '/f'],
         capture_output=True,
         text=True
     )
@@ -282,8 +283,9 @@ def set_system_env(var_name: str, value: str) -> bool:
         print(f"[OK] {var_name} 已经是 {value}，跳过")
         return True
 
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', var_name, value],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', var_name, '/t', 'REG_SZ', '/d', value, '/f'],
         capture_output=True,
         text=True
     )

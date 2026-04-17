@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from config_java_env import get_system_path
 
 
-def main():
+def main() -> None:
     # 获取当前系统 PATH
     current_path = get_system_path()
 
@@ -64,8 +64,9 @@ def main():
 
     # 写入系统 PATH
     print("\n写入中...")
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'Path', new_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'Path', '/t', 'REG_SZ', '/d', new_path, '/f'],
         capture_output=True,
         text=True
     )

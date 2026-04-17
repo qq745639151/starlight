@@ -36,9 +36,6 @@ ALIBABA_MIRROR_CONFIG = '''
   </mirror>
 '''
 
-
-
-
 def get_system_path() -> str:
     """获取系统 PATH 环境变量"""
     result = subprocess.run(
@@ -84,8 +81,9 @@ def is_maven_in_path(maven_bin_path: str) -> bool:
 
 def set_maven_home(maven_path: str) -> bool:
     """设置系统环境变量 MAVEN_HOME（需要管理员权限）"""
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'MAVEN_HOME', maven_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'MAVEN_HOME', '/t', 'REG_SZ', '/d', maven_path, '/f'],
         capture_output=True,
         text=True
     )
@@ -133,8 +131,9 @@ def add_to_system_path(maven_bin_path: str) -> bool:
     current_entries.append(maven_bin_path)
     new_path = ';'.join(current_entries)
 
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'Path', new_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'Path', '/t', 'REG_SZ', '/d', new_path, '/f'],
         capture_output=True,
         text=True
     )
@@ -142,7 +141,37 @@ def add_to_system_path(maven_bin_path: str) -> bool:
 
 
 def get_current_maven_home() -> Optional[str]:
-    """获取当前系统的 MAVEN_HOME 环境变量"""
+    """获取当前系统的 MAVEN_HOME 环境变量（从注册表读取，保证获取的是系统配置而非当前进程环境）"""
+    result = subprocess.run(
+        ['reg', 'query', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'MAVEN_HOME'],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        # 如果从注册表读取失败，回退到从环境变量获取
+        return os.environ.get('MAVEN_HOME')
+
+    # 注册表输出格式:
+    #     MAVEN_HOME    REG_SZ    C:\Program Files\Apache\maven
+    # 我们需要找到 REG_SZ 之后的所有内容
+    lines = result.stdout.splitlines()
+    for line in lines:
+        line = line.rstrip('\n')
+        # 找出带有 MAVEN_HOME 的行，这行以多个空格开头
+        if 'MAVEN_HOME' in line and 'REG_' in line:
+            # 找到 REG_ 的位置，后面就是完整的 MAVEN_HOME 值
+            reg_index = line.find('REG_')
+            # 跳过 REG_xxx 和它前面的空格
+            # 找到第三个部分之后都是值（名称 类型 值）
+            # 格式是: [空格]名称[空格+]类型[空格+]值
+            # 所以从找到 REG_ 后跳过类型
+            space_after_reg = line.find(' ', reg_index)
+            if space_after_reg != -1:
+                # 值从 space_after_reg + 1 开始
+                mavenhome_value = line[space_after_reg + 1:].rstrip().lstrip()
+                return mavenhome_value
+
+    # 如果解析失败，回退到从环境变量获取
     return os.environ.get('MAVEN_HOME')
 
 

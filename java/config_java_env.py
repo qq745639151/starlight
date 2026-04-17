@@ -26,7 +26,37 @@ DEFAULT_JDK_PATH = r"D:\Softwares\Java\jdk1.8"
 
 
 def get_current_java_home() -> Optional[str]:
-    """获取当前系统的 JAVA_HOME 环境变量"""
+    """获取当前系统的 JAVA_HOME 环境变量（从注册表读取，保证获取的是系统配置而非当前进程环境）"""
+    result = subprocess.run(
+        ['reg', 'query', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'JAVA_HOME'],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        # 如果从注册表读取失败，回退到从环境变量获取
+        return os.environ.get('JAVA_HOME')
+
+    # 注册表输出格式:
+    #     JAVA_HOME    REG_SZ    C:\Program Files\Java\jdk1.8.0_xxx
+    # 我们需要找到 REG_SZ 之后的所有内容
+    lines = result.stdout.splitlines()
+    for line in lines:
+        line = line.rstrip('\n')
+        # 找出带有 JAVA_HOME 的行，这行以多个空格开头
+        if 'JAVA_HOME' in line and 'REG_' in line:
+            # 找到 REG_ 的位置，后面就是完整的 JAVA_HOME 值
+            reg_index = line.find('REG_')
+            # 跳过 REG_xxx 和它前面的空格
+            # 找到第三个部分之后都是值（名称 类型 值）
+            # 格式是: [空格]名称[空格+]类型[空格+]值
+            # 所以从找到 REG_ 后跳过类型
+            space_after_reg = line.find(' ', reg_index)
+            if space_after_reg != -1:
+                # 值从 space_after_reg + 1 开始
+                javahome_value = line[space_after_reg + 1:].rstrip().lstrip()
+                return javahome_value
+
+    # 如果解析失败，回退到从环境变量获取
     return os.environ.get('JAVA_HOME')
 
 
@@ -110,8 +140,9 @@ def remove_jdk_from_path(current_path: str, jdk_bin_to_remove: str) -> str:
 
 def set_java_home(jdk_path: str) -> bool:
     """设置系统环境变量 JAVA_HOME（需要管理员权限）"""
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'JAVA_HOME', jdk_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'JAVA_HOME', '/t', 'REG_SZ', '/d', jdk_path, '/f'],
         capture_output=True,
         text=True
     )
@@ -123,8 +154,9 @@ def set_classpath(jdk_path: str) -> bool:
     配置: .;%JAVA_HOME%\lib\dt.jar;%JAVA_HOME%\lib\tools.jar
     """
     classpath = r".;%JAVA_HOME%\lib\dt.jar;%JAVA_HOME%\lib\tools.jar"
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'CLASSPATH', classpath],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'CLASSPATH', '/t', 'REG_SZ', '/d', classpath, '/f'],
         capture_output=True,
         text=True
     )
@@ -132,7 +164,28 @@ def set_classpath(jdk_path: str) -> bool:
 
 
 def get_current_classpath() -> Optional[str]:
-    """获取当前 CLASSPATH 环境变量"""
+    """获取当前 CLASSPATH 环境变量（从注册表读取，保证获取的是系统配置而非当前进程环境）"""
+    result = subprocess.run(
+        ['reg', 'query', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'CLASSPATH'],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        # 如果从注册表读取失败，回退到从环境变量获取
+        return os.environ.get('CLASSPATH')
+
+    # 解析注册表输出
+    lines = result.stdout.splitlines()
+    for line in lines:
+        line = line.rstrip('\n')
+        if 'CLASSPATH' in line and 'REG_' in line:
+            reg_index = line.find('REG_')
+            space_after_reg = line.find(' ', reg_index)
+            if space_after_reg != -1:
+                classpath_value = line[space_after_reg + 1:].rstrip().lstrip()
+                return classpath_value
+
+    # 如果解析失败，回退到从环境变量获取
     return os.environ.get('CLASSPATH')
 
 
@@ -150,8 +203,9 @@ def add_to_system_path(jdk_bin_path: str) -> bool:
 
     # 不存在就追加，保留其他所有路径（支持多版本并存）
     new_path = f"{current_path};{jdk_bin_path}"
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'Path', new_path],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'Path', '/t', 'REG_SZ', '/d', new_path, '/f'],
         capture_output=True,
         text=True
     )

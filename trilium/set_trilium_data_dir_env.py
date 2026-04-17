@@ -81,8 +81,9 @@ def get_current_trilium_data_dir() -> Optional[str]:
 def set_trilium_data_dir(data_dir: str) -> bool:
     """设置系统环境变量 TRILIUM_DATA_DIR（需要管理员权限）"""
     data_dir_abs = os.path.abspath(data_dir)
+    # 使用 reg add 而不是 setx，避免 setx 的 1024 字符截断限制
     result = subprocess.run(
-        ['setx', '/M', 'TRILIUM_DATA_DIR', data_dir_abs],
+        ['reg', 'add', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', 'TRILIUM_DATA_DIR', '/t', 'REG_SZ', '/d', data_dir_abs, '/f'],
         capture_output=True,
         text=True
     )
