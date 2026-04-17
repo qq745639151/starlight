@@ -41,8 +41,8 @@
     },
     {
       "path": "CLAUDE.md",
-      "accessCount": 16,
-      "lastAccessed": 1776395224795,
+      "accessCount": 17,
+      "lastAccessed": 1776396129180,
       "type": "file"
     },
     {
@@ -133,6 +133,12 @@
       "path": "java\\deduplicate_path.py",
       "accessCount": 1,
       "lastAccessed": 1776394216269,
+      "type": "file"
+    },
+    {
+      "path": "go\\config_go_env.py",
+      "accessCount": 1,
+      "lastAccessed": 1776396120284,
       "type": "file"
     }
   ],

@@ -40,6 +40,11 @@ uv Python 包管理器安装
 
 - `install_uv.py` — 通过 pip 自动安装 uv，检测是否已安装，已安装就跳过
 
+### go/
+Go 语言环境配置
+
+- `config_go_env.py` — 配置 Go 系统环境变量，设置 GOROOT 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，支持多版本 Go 并存
+
 ## Scripts
 
 ```bash
