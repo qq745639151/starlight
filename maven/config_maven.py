@@ -203,37 +203,63 @@ def configure_maven_settings(maven_path: str) -> bool:
                 # 这样保证格式正确且保留原有注释
                 insert_position = content.find('<!-- interactiveMode')
                 if insert_position != -1:
-                    new_content = content[:insert_position]
-                    new_content += f'  <localRepository>{local_repo_path}</localRepository>\n\n'
-                    new_content += content[insert_position:]
-                    content = new_content
+                    # insert_position 指向 "<!--"，它前面已经有缩进了
+                    # 我们需要回退到行开头，找到换行位置
+                    newline_pos = content.rfind('\n', 0, insert_position)
+                    if newline_pos != -1:
+                        # 默认模板中 <!-- interactiveMode 顶格，但它上面的注释块用了两个空格缩进
+                        # 所有顶级元素在 <settings> 下都使用两个空格缩进
+                        line_indent = '  '
+                        new_content = content[:newline_pos+1]
+                        new_content += f'{line_indent}<localRepository>{local_repo_path}</localRepository>\n\n'
+                        new_content += content[newline_pos+1:]
+                        content = new_content
+                    else:
+                        # 找不到换行，直接插入
+                        new_content = content[:insert_position]
+                        new_content += f'  <localRepository>{local_repo_path}</localRepository>\n\n'
+                        new_content += content[insert_position:]
+                        content = new_content
                 else:
                     # 回退到在 </settings> 前插入
                     content = content.rstrip()
                     if content.endswith('</settings>'):
                         content = content[:-11] + f'  <localRepository>{local_repo_path}</localRepository>\n</settings>'
+                    else:
+                        # 如果文件格式不正确，找不到 </settings>，编辑失败，触发 fallback
+                        success = False
 
-            # 添加阿里云镜像
-            if 'aliyunmaven' not in content:
+            # 如果还没失败，继续添加阿里云镜像
+            if success and 'aliyunmaven' not in content:
                 # 找到 </mirrors> 标签前插入
                 if '</mirrors>' in content:
-                    # 在 </mirrors> 前插入
-                    mirror_content = ALIBABA_MIRROR_CONFIG.rstrip()
-                    content = content.replace('</mirrors>', f'  {mirror_content}\n</mirrors>')
+                    # 在 </mirrors> 前插入，使用正确缩进（两个空格）
+                    mirror_lines = ALIBABA_MIRROR_CONFIG.strip().splitlines()
+                    # 给每一行添加两个空格缩进
+                    mirror_content_indented = '\n'.join('  ' + line for line in mirror_lines)
+                    content = content.replace('</mirrors>', f'{mirror_content_indented}\n</mirrors>')
                 else:
                     # 如果没有 mirrors 节点，创建一个
+                    mirror_lines = ALIBABA_MIRROR_CONFIG.strip().splitlines()
+                    mirror_content_indented = '\n'.join('    ' + line for line in mirror_lines)
                     mirrors_block = f'''  <mirrors>
-{ALIBABA_MIRROR_CONFIG}  </mirrors>
+{mirror_content_indented}
+  </mirrors>
 '''
                     # 在 </settings> 前插入
                     content = content.rstrip()
                     if content.endswith('</settings>'):
                         content = content[:-11] + mirrors_block + '</settings>'
+                    else:
+                        # 如果文件格式不正确，找不到 </settings>，编辑失败，触发 fallback
+                        success = False
 
-            # 写入
-            with open(settings_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            success = True
+            # 如果还没失败，写入文件
+            if success:
+                # 写入
+                with open(settings_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                success = True
         except Exception:
             # 编辑失败，使用 fallback 方法
             print("[!] 编辑现有 settings.xml 失败，使用模板 fallback 方式")
