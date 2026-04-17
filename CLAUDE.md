@@ -45,6 +45,11 @@ Go 语言环境配置
 
 - `config_go_env.py` — 配置 Go 系统环境变量，设置 GOROOT 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，支持多版本 Go 并存
 
+### maven/
+Maven 环境配置
+
+- `config_maven.py` — 配置 Maven 系统环境变量，设置 MAVEN_HOME 并将 bin 目录添加到系统 PATH，自动检查已存在的配置，支持多版本 Maven 并存
+
 ## Scripts
 
 ```bash
