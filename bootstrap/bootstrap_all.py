@@ -78,9 +78,9 @@ TOOL_CONFIGS = {
         'env_name': 'GOROOT',
     },
     'node': {
-        'version': '20.12.2',
-        'url': 'https://nodejs.org/dist/v20.12.2/node-v20.12.2-x64.msi',
-        'filename': 'node-v20.12.2-x64.msi',
+        'version': '25.9.0',
+        'url': 'https://nodejs.org/dist/v25.9.0/node-v25.9.0-x64.msi',
+        'filename': 'node-v25.9.0-x64.msi',
         'install_args': '/qn /norestart',
         'default_path': r'D:\Softwares\nodejs',
         'env_name': None,  # Node.js installer adds PATH automatically
