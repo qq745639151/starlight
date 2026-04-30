@@ -5,12 +5,13 @@
 作用:
 读取 Claude Code 的 settings.json 配置文件，只修改与 API 相关的配置项，
 保留原有其他配置（如 permissions、plugins、statusLine 等）不变，
-提供三组预定义配置供切换选择。
+提供四组预定义配置供切换选择。
 
-三组预定义配置:
-1. 字节火山引擎 ark-code-latest (密钥1)
-2. 字节火山引擎 ark-code-latest (密钥2)
+四组预定义配置:
+1. 字节火山引擎 ark-code-latest (密钥1 - 公司)
+2. 字节火山引擎 ark-code-latest (密钥2 - 个人)
 3. MiniMax MiniMax-M2.7
+4. DeepSeek deepseek-v4-pro
 
 用法:
 python claude/switch_anthropic_key.py [选项]
@@ -18,7 +19,7 @@ python claude/switch_anthropic_key.py [选项]
 选项:
   -h, --help              显示帮助信息
   -l, --list              列出所有可用配置
-  -s, --select <index>   直接选择指定索引的配置（0, 1, 2）
+  -s, --select <index>   直接选择指定索引的配置（0, 1, 2, 3）
   如果不带选项，会交互式提示选择
 """
 
@@ -28,7 +29,7 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# 预定义的三组配置
+# 预定义的四组配置
 CONFIGURATIONS = [
     {
         "name": "字节火山引擎 - ark-code-latest (密钥1 - 公司)",
@@ -38,6 +39,8 @@ CONFIGURATIONS = [
         "ANTHROPIC_DEFAULT_SONNET_MODEL": "ark-code-latest",
         "ANTHROPIC_DEFAULT_OPUS_MODEL": "ark-code-latest",
         "ANTHROPIC_DEFAULT_HAIKU_MODEL": "ark-code-latest",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "ark-code-latest",
+        "CLAUDE_CODE_EFFORT_LEVEL": "max",
         "root_model": "ark-code-latest"
     },
     {
@@ -48,6 +51,8 @@ CONFIGURATIONS = [
         "ANTHROPIC_DEFAULT_SONNET_MODEL": "ark-code-latest",
         "ANTHROPIC_DEFAULT_OPUS_MODEL": "ark-code-latest",
         "ANTHROPIC_DEFAULT_HAIKU_MODEL": "ark-code-latest",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "ark-code-latest",
+        "CLAUDE_CODE_EFFORT_LEVEL": "max",
         "root_model": "ark-code-latest"
     },
     {
@@ -58,7 +63,21 @@ CONFIGURATIONS = [
         "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2.7",
         "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M2.7",
         "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.7",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "MiniMax-M2.7",
+        "CLAUDE_CODE_EFFORT_LEVEL": "max",
         "root_model": "MiniMax-M2.7"
+    },
+    {
+        "name": "DeepSeek - deepseek-v4-pro",
+        "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+        "ANTHROPIC_AUTH_TOKEN": "sk-381e379917e74badbd7ee4c9a2c8cda3",
+        "ANTHROPIC_MODEL": "deepseek-v4-pro",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-flash",
+        "CLAUDE_CODE_EFFORT_LEVEL": "max",
+        "root_model": "deepseek-v4-pro"
     }
 ]
 
@@ -106,6 +125,8 @@ def apply_config(settings: Dict, config: Dict) -> Dict:
     settings["env"]["ANTHROPIC_DEFAULT_SONNET_MODEL"] = config["ANTHROPIC_DEFAULT_SONNET_MODEL"]
     settings["env"]["ANTHROPIC_DEFAULT_OPUS_MODEL"] = config["ANTHROPIC_DEFAULT_OPUS_MODEL"]
     settings["env"]["ANTHROPIC_DEFAULT_HAIKU_MODEL"] = config["ANTHROPIC_DEFAULT_HAIKU_MODEL"]
+    settings["env"]["CLAUDE_CODE_SUBAGENT_MODEL"] = config["CLAUDE_CODE_SUBAGENT_MODEL"]
+    settings["env"]["CLAUDE_CODE_EFFORT_LEVEL"] = config["CLAUDE_CODE_EFFORT_LEVEL"]
 
     # 修改根级别的 model 字段
     settings["model"] = config["root_model"]
@@ -127,7 +148,7 @@ def list_configs() -> None:
 def interactive_select() -> int:
     """交互式选择配置"""
     list_configs()
-    print("请选择要切换到的配置（输入索引 0-2）：")
+    print("请选择要切换到的配置（输入索引 0-3）：")
     while True:
         try:
             choice = int(input().strip())
